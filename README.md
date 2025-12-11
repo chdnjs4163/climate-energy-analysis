@@ -20,19 +20,22 @@
 
 ### 1. 메인 대시보드 (Dashboard)
 사용자가 CSV 데이터를 업로드하고 K값(그룹 수)을 설정하면, 실시간으로 분석된 결과가 3D 그래프와 리포트로 출력됩니다.
-![Main Dashboard](images/main_dashboard.png)
+<img width="718" height="806" alt="image" src="https://github.com/user-attachments/assets/3b83ab7c-da5e-4be2-8566-60d863f39183" />
+
 
 ### 2. 고해상도 3D 클러스터링 시각화
 서버 사이드에서 렌더링된 4K급 고해상도 그래프를 통해 에너지 효율, CO2 배출량, 재생에너지 비중을 3차원으로 확인합니다.
-![3D Visualization](images/3d_visualization.png)
+<img width="718" height="611" alt="image" src="https://github.com/user-attachments/assets/864261b0-fd18-4dc2-9f54-3b2f554e483b" />
+
 
 ### 3. AI 분석 리포트 & 개선 전략 (Action Plan)
 각 그룹의 특성을 요약한 리포트를 제공하며, 클릭 시 해당 그룹에 맞는 **구체적인 개선 전략(전구 아이콘 💡)**을 제안합니다.
-![AI Report](images/ai_report.png)
+<img width="712" height="503" alt="image" src="https://github.com/user-attachments/assets/9a8c2a19-ace9-41fa-9ef3-815139ae44f0" />
 
 ### 4. 상세 데이터 지표
 영문 국가명을 한글로 자동 변환하여 제공하며, 각 국가의 세부 데이터를 표 형태로 확인할 수 있습니다.
-![Data Table](images/data_table.png)
+<img width="718" height="410" alt="image" src="https://github.com/user-attachments/assets/603d0cab-de8b-4f54-aa04-c8283fff99c0" />
+
 
 ---
 
