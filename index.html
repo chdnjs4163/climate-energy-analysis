@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 기반 기후 데이터 분석</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <style>
+        body { background-color: #f4f6f9; font-family: 'NanumGothic', 'Malgun Gothic', sans-serif; }
+        .container-fluid { max-width: 1800px; margin-top: 20px; }
+        
+        .card { 
+            border: none; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04); 
+            background-color: white;
+            transition: transform 0.2s;
+        }
+        
+        .option-card { border-left: 5px solid #343a40; }
+        .legend-card { border-left: 5px solid #6c757d; }
+        
+        .insight-item { 
+            background: #f8f9fa; padding: 15px; margin-bottom: 10px; 
+            border-radius: 8px; border: 1px solid #e9ecef;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .insight-item:hover { transform: translateX(5px); background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        
+        .table-custom { font-size: 0.95rem; }
+        .table-custom thead th { 
+            background-color: #343a40; 
+            color: white; 
+            font-weight: 500;
+            position: sticky; top: 0; z-index: 1;
+            padding: 12px 8px;
+        }
+        .table-hover tbody tr:hover { background-color: #f1f3f5; cursor: pointer; }
+        
+        .zoom-img { cursor: zoom-in; transition: transform 0.3s; }
+        .zoom-img:hover { transform: scale(1.01); }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid pb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4 px-2">
+            <div>
+                <h3 class="fw-bold text-dark mb-0"><i class="bi bi-grid-1x2-fill text-primary"></i> 국가별 에너지 & 기후 패턴 분석 대시보드</h3>
+                <p class="text-muted mt-1 mb-0 small">AI K-Means 군집 분석 | 데이터 기반 의사결정 지원 시스템</p>
+            </div>
+            <div>
+            </div>
+        </div>
+        
+        <div class="row g-3">
+            <div class="col-lg-2 d-flex flex-column">
+                <div class="card p-3 mb-3 option-card">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-sliders"></i> 분석 옵션</h6>
+                    <form id="analysisForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">CSV 데이터 업로드</label>
+                            <input type="file" class="form-control form-control-sm" id="csvFile" accept=".csv" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted">그룹 개수 (K)</label>
+                            <select class="form-select form-select-sm" id="kValue">
+                                <option value="3">3개 그룹</option>
+                                <option value="4" selected>4개 그룹 (최적)</option>
+                                <option value="5">5개 그룹</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold btn-sm">분석 실행 <i class="bi bi-lightning-fill"></i></button>
+                    </form>
+                </div>
+
+                <div class="card p-3 flex-fill legend-card">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-journal-text"></i> 범례 가이드</h6>
+                    <div id="guide-placeholder" class="text-center text-muted py-5 small">
+                        <i class="bi bi-info-circle mb-2 d-block fs-4"></i>
+                        분석을 시작하면<br>가이드가 표시됩니다.
+                    </div>
+                    <ul class="list-unstyled mb-0" id="guideList"></ul>
+                </div>
+            </div>
+
+            <div class="col-lg-10">
+                <div id="loading" class="text-center py-5 card" style="display: none; height: 600px; justify-content: center;">
+                    <div class="spinner-border text-primary mx-auto" style="width: 3rem; height: 3rem;" role="status"></div>
+                    <h5 class="mt-4 fw-bold">AI가 데이터를 분석 중입니다...</h5>
+                    <p class="text-muted">잠시만 기다려주세요.</p>
+                </div>
+
+                <div id="result-area" style="display: none;">
+                    
+                    <div class="row g-3" style="height: 500px;">
+                        <div class="col-lg-8 h-100">
+                            <div class="card h-100 p-2 text-center position-relative">
+                                <div class="d-flex justify-content-between px-2 pt-2 pb-0">
+                                    <h6 class="fw-bold"><i class="bi bi-box-seam"></i> 3D 클러스터 시각화</h6>
+                                    <span class="badge bg-light text-dark border">Drag & Zoom 가능</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-center h-100 overflow-hidden">
+                                    <img id="resultImage" src="" class="img-fluid zoom-img" 
+                                         data-bs-toggle="modal" data-bs-target="#imageModal" 
+                                         style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                </div>
+                                <div class="position-absolute bottom-0 end-0 p-3">
+                                    <button class="btn btn-sm btn-light border shadow-sm" data-bs-toggle="modal" data-bs-target="#imageModal"><i class="bi bi-arrows-fullscreen"></i> 확대</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4 h-100">
+                            <div class="card h-100 p-3 bg-white">
+                                <h6 class="fw-bold mb-3"><i class="bi bi-robot"></i> AI 분석 리포트</h6>
+                                <div id="insight-container" style="overflow-y: auto; height: 100%; padding-right: 5px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-5"> 
+                        <div class="col-12">
+                            <div class="card p-0 overflow-hidden">
+                                <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+                                    <h6 class="fw-bold mb-0"><i class="bi bi-table"></i> 상세 데이터 지표</h6>
+                                    <small class="text-muted">행을 클릭하여 국가 목록 및 상세 데이터를 확인하세요.</small>
+                                </div>
+                                <div class="table-responsive" style="max-height: 400px;">
+                                    <table class="table table-sm table-hover text-center align-middle table-custom mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 80px;">ID</th>
+                                                <th>유형 라벨</th>
+                                                <th>CO2 배출량 (Ton)</th>
+                                                <th>재생에너지 (%)</th>
+                                                <th>산업지수</th>
+                                                <th>에너지 가격 (€)</th> </tr>
+                                        </thead>
+                                        <tbody id="summaryTableBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="reasonModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header py-3" style="background-color: #f8f9fa;">
+                    <h5 class="modal-title fw-bold" id="modalLabelName"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="modalReason"></div>
+                    
+                    <div id="adviceSection" class="mt-4 p-3 border rounded" style="background-color: #fffbeb; border-color: #ffeeba !important; display: none;">
+                        <h6 class="fw-bold text-warning mb-2">
+                            <i class="bi bi-lightbulb-fill"></i> AI 개선 전략 제안
+                        </h6>
+                        <p id="modalAdvice" class="mb-0 text-dark small" style="line-height: 1.6;"></p>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-dark px-4" data-bs-dismiss="modal">확인</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="imageModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content bg-transparent border-0">
+                <div class="modal-body text-center p-0 position-relative">
+                    <button type="button" class="btn btn-light position-absolute top-0 end-0 m-3 rounded-circle shadow" data-bs-dismiss="modal">❌</button>
+                    <img id="modalResultImage" src="" class="img-fluid rounded shadow-lg" style="max-height: 90vh;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let globalData = [];
+
+        document.getElementById('analysisForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('result-area').style.display = 'none';
+            document.getElementById('guide-placeholder').style.display = 'block';
+            document.getElementById('guideList').innerHTML = '';
+            
+            const formData = new FormData();
+            formData.append('file', document.getElementById('csvFile').files[0]);
+            formData.append('k', document.getElementById('kValue').value);
+            
+            try {
+                const response = await fetch('/analyze', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error('서버 오류');
+                const data = await response.json();
+                
+                globalData = data.summary;
+                
+                document.getElementById('resultImage').src = data.image;
+                document.getElementById('modalResultImage').src = data.image;
+                
+                updateGuide(data.summary); 
+                updateUI(data.summary);
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('result-area').style.display = 'block';
+                
+            } catch (err) { 
+                alert('오류가 발생했습니다: ' + err.message); 
+                document.getElementById('loading').style.display = 'none';
+            } 
+        });
+
+        function updateUI(summaryData) {
+            const insightBox = document.getElementById('insight-container');
+            const tbody = document.getElementById('summaryTableBody');
+            insightBox.innerHTML = ''; tbody.innerHTML = '';
+
+            summaryData.forEach((group, index) => {
+                // 리포트 클릭 시 -> showAdvice = true
+                insightBox.innerHTML += `
+                    <div class="insight-item" style="border-left: 4px solid ${group.color};" onclick="showReason(${index}, true)">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge" style="background-color:${group.color}">${group.label}</span>
+                        </div>
+                        <div class="text-dark small lh-base">${group.explanation}</div>
+                    </div>`;
+
+                // 테이블 행 클릭 시 -> showAdvice = false (개선 계획 숨김)
+                tbody.innerHTML += `
+                    <tr onclick="showReason(${index}, false)">
+                        <td><span class="badge rounded-pill" style="background-color:${group.color}; width:30px;">G${group.cluster+1}</span></td>
+                        <td class="fw-bold text-start text-dark">${group.label}</td>
+                        <td>${group.co2}</td>
+                        <td>${group.renewable}%</td>
+                        <td>${group.industry}</td>
+                        <td>€ ${group.price}</td>
+                    </tr>`;
+            });
+        }
+
+        function updateGuide(summaryData) {
+            document.getElementById('guide-placeholder').style.display = 'none';
+            const guideList = document.getElementById('guideList');
+            guideList.innerHTML = '';
+            
+            summaryData.forEach(group => {
+                guideList.innerHTML += `
+                    <li class="mb-3 p-2 rounded border bg-light d-flex align-items-center">
+                        <div style="background-color:${group.color}; width:15px; height:15px; border-radius:50%; margin-right:10px; flex-shrink:0;"></div>
+                        <div>
+                            <span class="d-block fw-bold small text-dark">${group.label}</span>
+                            <span class="d-block text-muted" style="font-size:0.7rem;">${group.explanation}</span>
+                        </div>
+                    </li>`;
+            });
+        }
+
+        // [핵심 로직] showAdvice 파라미터 추가
+        function showReason(index, showAdvice) {
+            const group = globalData[index];
+            document.getElementById('modalLabelName').innerText = group.label;
+            document.getElementById('modalLabelName').style.color = group.color;
+            document.getElementById('modalReason').innerHTML = group.reason_detail;
+            
+            document.getElementById('modalAdvice').innerText = group.advice;
+
+            // 리포트를 눌렀을 때만 전구 섹션 표시
+            if (showAdvice) {
+                document.getElementById('adviceSection').style.display = 'block';
+            } else {
+                document.getElementById('adviceSection').style.display = 'none';
+            }
+            
+            new bootstrap.Modal(document.getElementById('reasonModal')).show();
+        }
+    </script>
+</body>
+</html>
