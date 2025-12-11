@@ -20,7 +20,8 @@
 
 ### 1. 메인 대시보드 (Dashboard)
 사용자가 CSV 데이터를 업로드하고 K값(그룹 수)을 설정하면, 실시간으로 분석된 결과가 3D 그래프와 리포트로 출력됩니다.
-<img width="718" height="806" alt="image" src="https://github.com/user-attachments/assets/3b83ab7c-da5e-4be2-8566-60d863f39183" />
+<img width="1802" height="871" alt="스크린샷 2025-12-10 181458" src="https://github.com/user-attachments/assets/ba6c1863-62be-4151-b123-bbd579db1c64" />
+
 
 
 ### 2. 고해상도 3D 클러스터링 시각화
